@@ -87,6 +87,12 @@ Retorna pagamentos de uma data específica (formato: YYYY-MM-DD)
 ### POST `/simular-webhook`
 Simula o envio de um webhook para testes
 
+### GET `/ping`
+Endpoint de ping para manter servidor ativo (keep-alive)
+
+### GET `/health`
+Health check completo do servidor
+
 ## 🎯 Dados Extraídos do PIX
 
 Para cada pagamento, o sistema extrai e armazena:
@@ -148,6 +154,29 @@ curl -X POST http://localhost:3000/webhook \
 2. Configure como **Web Service**
 3. Use o comando: `npm start`
 4. Configure a variável de ambiente `PORT` (opcional)
+
+### ⚡ Sistema Anti-Desativação (Keep-Alive)
+
+O projeto inclui um sistema para contornar a desativação por inatividade do Render:
+
+#### **Frontend Automático:**
+- Ping automático a cada 5 minutos via JavaScript
+- Indicador visual de que o ping está ativo
+- Exibição do uptime do servidor
+
+#### **Script de Linha de Comando:**
+```bash
+# Ping a cada 5 minutos
+node keep-alive.js https://seu-app.onrender.com
+
+# Ping a cada 1 minuto (modo frequente)
+node keep-alive.js https://seu-app.onrender.com --frequent
+```
+
+#### **Serviços Externos:**
+- **UptimeRobot**: Configure para pingar `/ping` a cada 5 minutos
+- **Cron-job.org**: Agende requisições GET para `/ping`
+- **GitHub Actions**: Use workflows para manter o servidor ativo
 
 ### Outras Plataformas
 O projeto é compatível com qualquer plataforma que suporte Node.js:

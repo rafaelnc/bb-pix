@@ -168,6 +168,24 @@ app.post('/simular-webhook', (req, res) => {
   res.json({ message: 'Webhook simulado enviado' });
 });
 
+// Endpoint para health check (mantém servidor ativo)
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    memory: process.memoryUsage()
+  });
+});
+
+// Endpoint para ping (versão simplificada do health check)
+app.get('/ping', (req, res) => {
+  res.status(200).json({ 
+    pong: new Date().toISOString(),
+    uptime: Math.floor(process.uptime())
+  });
+});
+
 // Socket.IO connection handling
 io.on('connection', (socket) => {
   console.log('Cliente conectado:', socket.id);
