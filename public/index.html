@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PIX Webhook - Banco do Brasil</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .status-bar {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .status-item {
+            text-align: center;
+            color: white;
+        }
+
+        .status-item h3 {
+            font-size: 2rem;
+            margin-bottom: 5px;
+        }
+
+        .status-item p {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+        }
+
+        .connected {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4CAF50;
+        }
+
+        .disconnected {
+            background: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .connected .status-dot {
+            background: #4CAF50;
+        }
+
+        .disconnected .status-dot {
+            background: #f44336;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+        }
+
+        .btn-secondary {
+            background: #2196F3;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #1976D2;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+        }
+
+        .pagamentos-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+
+        .pagamentos-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .pagamentos-header h2 {
+            color: #333;
+            font-size: 1.8rem;
+        }
+
+        .data-atual {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .pagamentos-lista {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .pagamento-item {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        .pagamento-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            border-color: #4CAF50;
+        }
+
+        .pagamento-item.novo {
+            animation: highlight 2s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes highlight {
+            0% { background: #e8f5e8; }
+            50% { background: #c8e6c9; }
+            100% { background: white; }
+        }
+
+        .pagamento-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .pagamento-valor {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+
+        .pagamento-horario {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .pagamento-detalhes {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+
+        .detalhe-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .detalhe-label {
+            font-size: 0.8rem;
+            color: #666;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .detalhe-valor {
+            font-size: 1rem;
+            color: #333;
+            font-weight: 500;
+            word-break: break-all;
+            overflow-wrap: break-word;
+        }
+
+        .pagamento-info {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+
+        .pagamento-info .detalhe-label {
+            color: #495057;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .empty-state p {
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4CAF50;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+                max-width: 100%;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .status-bar {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .controls {
+                justify-content: center;
+            }
+
+            .pagamentos-header {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+
+            .pagamento-detalhes {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏦 PIX Banco do Brasil</h1>
+            <p>Monitoramento de pagamentos em tempo real - Banco do Brasil</p>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-item">
+                <h3 id="totalPagamentos">0</h3>
+                <p>Total de Pagamentos</p>
+            </div>
+            <div class="status-item">
+                <h3 id="valorTotal">R$ 0,00</h3>
+                <p>Valor Total</p>
+            </div>
+            <div class="status-item">
+                <h3 id="dataAtual">--</h3>
+                <p>Data Atual</p>
+            </div>
+            <div class="connection-status" id="connectionStatus">
+                <div class="status-dot"></div>
+                <span id="connectionText">Conectando...</span>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-secondary" onclick="limparPagamentos()">
+                🗑️ Limpar Pagamentos
+            </button>
+            <a href="/api/pagamentos" target="_blank" class="btn btn-secondary">
+                📊 API JSON
+            </a>
+        </div>
+
+        <div class="pagamentos-container">
+            <div class="pagamentos-header">
+                <h2>📋 Pagamentos do Dia</h2>
+                <div class="data-atual" id="dataAtualHeader">--</div>
+            </div>
+
+            <div class="pagamentos-lista" id="pagamentosLista">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Carregando pagamentos...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Conectar ao Socket.IO
+        const socket = io();
+        let pagamentos = [];
+
+        // Elementos DOM
+        const connectionStatus = document.getElementById('connectionStatus');
+        const connectionText = document.getElementById('connectionText');
+        const totalPagamentos = document.getElementById('totalPagamentos');
+        const valorTotal = document.getElementById('valorTotal');
+        const dataAtual = document.getElementById('dataAtual');
+        const dataAtualHeader = document.getElementById('dataAtualHeader');
+        const pagamentosLista = document.getElementById('pagamentosLista');
+
+        // Atualizar data atual
+        function atualizarData() {
+            const hoje = new Date();
+            const dataFormatada = hoje.toLocaleDateString('pt-BR', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            dataAtual.textContent = hoje.toLocaleDateString('pt-BR');
+            dataAtualHeader.textContent = dataFormatada;
+        }
+
+        // Formatar valor monetário
+        function formatarMoeda(valor) {
+            return new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+            }).format(valor);
+        }
+
+        // Formatar data/hora
+        function formatarDataHora(data) {
+            return new Date(data).toLocaleString('pt-BR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+
+        // Atualizar estatísticas
+        function atualizarEstatisticas() {
+            totalPagamentos.textContent = pagamentos.length;
+            const total = pagamentos.reduce((sum, p) => sum + p.valor, 0);
+            valorTotal.textContent = formatarMoeda(total);
+        }
+
+        // Renderizar lista de pagamentos
+        function renderizarPagamentos() {
+            if (pagamentos.length === 0) {
+                pagamentosLista.innerHTML = `
+                    <div class="empty-state">
+                        <h3>📭 Nenhum pagamento encontrado</h3>
+                        <p>Os pagamentos PIX aparecerão aqui em tempo real quando recebidos via webhook.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            pagamentosLista.innerHTML = pagamentos
+                .sort((a, b) => new Date(b.horario) - new Date(a.horario))
+                .map((pagamento, index) => `
+                    <div class="pagamento-item ${index === 0 ? 'novo' : ''}" id="pagamento-${pagamento.txid}">
+                        <div class="pagamento-header">
+                            <div class="pagamento-valor">${formatarMoeda(pagamento.valor)}</div>
+                            <div class="pagamento-horario">${formatarDataHora(pagamento.horario)}</div>
+                        </div>
+                        
+                        <div class="pagamento-detalhes">
+                            <div class="detalhe-item">
+                                <div class="detalhe-label">TXID</div>
+                                <div class="detalhe-valor">${pagamento.txid}</div>
+                            </div>
+                            <div class="detalhe-item">
+                                <div class="detalhe-label">Pagador</div>
+                                <div class="detalhe-valor">${pagamento.pagador.nome}</div>
+                            </div>
+                            <div class="detalhe-item">
+                                <div class="detalhe-label">CPF</div>
+                                <div class="detalhe-valor">${pagamento.pagador.cpf}</div>
+                            </div>
+                            <div class="detalhe-item">
+                                <div class="detalhe-label">End-to-End ID</div>
+                                <div class="detalhe-valor">${pagamento.endToEndId}</div>
+                            </div>
+                        </div>
+                        
+                        ${pagamento.infoPagador ? `
+                            <div class="pagamento-info">
+                                <div class="detalhe-label">Informação do Pagador</div>
+                                <div class="detalhe-valor">${pagamento.infoPagador}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `).join('');
+        }
+
+        // Socket.IO event handlers
+        socket.on('connect', () => {
+            connectionStatus.className = 'connection-status connected';
+            connectionText.textContent = 'Conectado';
+            console.log('Conectado ao servidor');
+        });
+
+        socket.on('disconnect', () => {
+            connectionStatus.className = 'connection-status disconnected';
+            connectionText.textContent = 'Desconectado';
+            console.log('Desconectado do servidor');
+        });
+
+        socket.on('pagamentosAtuais', (data) => {
+            pagamentos = data.pagamentos;
+            atualizarEstatisticas();
+            renderizarPagamentos();
+        });
+
+        socket.on('novoPagamento', (data) => {
+            pagamentos = data.pagamentos;
+            atualizarEstatisticas();
+            renderizarPagamentos();
+            
+            // Notificação de novo pagamento
+            if (Notification.permission === 'granted') {
+                new Notification('Novo Pagamento PIX', {
+                    body: `Recebido: ${formatarMoeda(pagamentos[0].valor)} de ${pagamentos[0].pagador.nome}`,
+                    icon: '/favicon.ico'
+                });
+            }
+        });
+
+        // Funções de controle
+        function limparPagamentos() {
+            if (confirm('Tem certeza que deseja limpar todos os pagamentos?')) {
+                pagamentos = [];
+                atualizarEstatisticas();
+                renderizarPagamentos();
+            }
+        }
+
+        // Solicitar permissão para notificações
+        if ('Notification' in window) {
+            Notification.requestPermission();
+        }
+
+        // Inicialização
+        atualizarData();
+        setInterval(atualizarData, 1000);
+
+        // Carregar pagamentos iniciais
+        fetch('/api/pagamentos')
+            .then(response => response.json())
+            .then(data => {
+                pagamentos = data.pagamentos;
+                atualizarEstatisticas();
+                renderizarPagamentos();
+            })
+            .catch(error => {
+                console.error('Erro ao carregar pagamentos:', error);
+                pagamentosLista.innerHTML = `
+                    <div class="empty-state">
+                        <h3>❌ Erro ao carregar</h3>
+                        <p>Não foi possível carregar os pagamentos. Verifique a conexão com o servidor.</p>
+                    </div>
+                `;
+            });
+    </script>
+</body>
+</html> 
