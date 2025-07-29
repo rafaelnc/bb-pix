@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Script para configurar Nginx com HTTPS e mTLS
+# Script para configurar Nginx - Proxy HTTP simples
 # Execute: chmod +x setup-nginx.sh && sudo ./setup-nginx.sh
 
-echo "🌐 Configurando Nginx com HTTPS e mTLS..."
+echo "🌐 Configurando Nginx - Proxy HTTP simples..."
 echo ""
 
 # Verificar se está rodando como root
@@ -12,39 +12,12 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-# Verificar se os certificados existem
-echo "📋 Verificando certificados..."
-if [ ! -f "/home/rafael/Documentos/CYC/bb-pix/cert/api_webhook_bb_com_br.crt" ]; then
-    echo "❌ Certificado do servidor não encontrado"
-    exit 1
-fi
-
-if [ ! -f "/home/rafael/Documentos/CYC/bb-pix/cert/bb-webhook-chain.crt" ]; then
-    echo "❌ Cadeia de certificados não encontrada"
-    exit 1
-fi
-
-echo "✅ Certificados encontrados"
-
-# Verificar se a chave privada existe
-if [ ! -f "/home/rafael/Documentos/CYC/bb-pix/cert/api_webhook_bb_com_br.key" ]; then
-    echo "⚠️ Chave privada não encontrada. Criando certificado auto-assinado para teste..."
-    
-    # Criar diretório temporário para certificados
-    mkdir -p /tmp/ssl-certs
-    cd /tmp/ssl-certs
-    
-    # Gerar certificado auto-assinado
-    openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-        -keyout api_webhook_bb_com_br.key \
-        -out api_webhook_bb_com_br.crt \
-        -subj "/C=BR/ST=SP/L=Sao Paulo/O=PIX Webhook/CN=163.176.145.46"
-    
-    # Copiar para o diretório do projeto
-    cp api_webhook_bb_com_br.key /home/rafael/Documentos/CYC/bb-pix/cert/
-    cp api_webhook_bb_com_br.crt /home/rafael/Documentos/CYC/bb-pix/cert/
-    
-    echo "✅ Certificado auto-assinado criado para teste"
+# Verificar se a aplicação está rodando
+echo "📋 Verificando se a aplicação está rodando..."
+if ! curl -s http://localhost:3000/health > /dev/null 2>&1; then
+    echo "⚠️ Aplicação não está rodando na porta 3000"
+    echo "💡 Execute: node index.js"
+    echo "💡 Ou inicie a aplicação em background: nohup node index.js &"
 fi
 
 # Fazer backup da configuração atual
@@ -95,20 +68,21 @@ echo ""
 echo "🎉 Configuração concluída!"
 echo ""
 echo "📋 Endpoints disponíveis:"
-echo "  🌐 HTTP (redireciona para HTTPS): http://163.176.145.46"
-echo "  🔐 HTTPS com mTLS: https://163.176.145.46"
-echo "  🔐 HTTPS sem mTLS (desenvolvimento): https://163.176.145.46:8443"
+echo "  🌐 HTTP: http://163.176.145.46"
+echo "  🔐 HTTPS (aplicação): https://163.176.145.46:3443"
 echo ""
 echo "🔗 URLs específicas:"
-echo "  📱 Interface web: https://163.176.145.46"
-echo "  🔗 Webhook (mTLS): https://163.176.145.46/webhook"
-echo "  📊 Client info: https://163.176.145.46/api/client-info"
-echo "  🔍 Health check: https://163.176.145.46/health"
+echo "  📱 Interface web: http://163.176.145.46"
+echo "  🔗 Webhook (HTTP): http://163.176.145.46/webhook"
+echo "  🔗 Webhook (HTTPS/mTLS): https://163.176.145.46:3443/webhook"
+echo "  📊 Client info: http://163.176.145.46/api/client-info"
+echo "  🔍 Health check: http://163.176.145.46/health"
 echo ""
 echo "📝 Logs:"
-echo "  📄 Acesso: tail -f /var/log/nginx/bb-webhook-access.log"
-echo "  ❌ Erros: tail -f /var/log/nginx/bb-webhook-error.log"
+echo "  📄 Acesso: tail -f /var/log/nginx/pix-webhook-access.log"
+echo "  ❌ Erros: tail -f /var/log/nginx/pix-webhook-error.log"
 echo ""
 echo "🧪 Para testar:"
-echo "  curl -k https://163.176.145.46/health"
+echo "  curl http://163.176.145.46/health"
+echo "  curl -k https://163.176.145.46:3443/health"
 echo "" 
