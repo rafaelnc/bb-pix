@@ -19,6 +19,114 @@
             color: #333;
         }
 
+        /* Login Screen Styles */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .login-card h2 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2rem;
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-group {
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .login-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 20px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .login-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .error-message {
+            color: #f44336;
+            background: rgba(244, 67, 54, 0.1);
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .logout-btn {
+            background: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+            border: 1px solid #f44336;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: #f44336;
+            color: white;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
         .container {
             max-width: 1400px;
             margin: 0 auto;
@@ -349,10 +457,41 @@
     </style>
 </head>
 <body>
-    <div class="container">
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-container">
+        <div class="login-card">
+            <h2>🔐 Login</h2>
+            <form class="login-form" id="loginForm">
+                <div class="form-group">
+                    <label for="username">Usuário:</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Senha:</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <button type="submit" class="login-btn" id="loginBtn">
+                    Entrar
+                </button>
+                <div class="error-message" id="errorMessage">
+                    Usuário ou senha incorretos!
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="mainApp" class="container hidden">
         <div class="header">
-            <h1>🏦 PIX Banco do Brasil</h1>
-            <p>Monitoramento de pagamentos em tempo real - Banco do Brasil</p>
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <div>
+                    <h1>🏦 PIX Banco do Brasil</h1>
+                    <p>Monitoramento de pagamentos em tempo real - Banco do Brasil</p>
+                </div>
+                <button class="logout-btn" onclick="logout()">
+                    🚪 Sair
+                </button>
+            </div>
         </div>
 
         <div class="status-bar">
@@ -554,29 +693,109 @@
             Notification.requestPermission();
         }
 
+        // Sistema de Autenticação
+        const LOGIN_USERNAME = 'motolider';
+        const LOGIN_PASSWORD = 'motolider2025';
+        const AUTH_KEY = 'pix_webhook_auth';
 
+        // Elementos de autenticação
+        const loginScreen = document.getElementById('loginScreen');
+        const mainApp = document.getElementById('mainApp');
+        const loginForm = document.getElementById('loginForm');
+        const errorMessage = document.getElementById('errorMessage');
+        const loginBtn = document.getElementById('loginBtn');
 
-        // Inicialização
-        atualizarData();
-        setInterval(atualizarData, 1000);
+        // Verificar se já está autenticado
+        function checkAuth() {
+            const auth = localStorage.getItem(AUTH_KEY);
+            if (auth === 'true') {
+                showMainApp();
+            } else {
+                showLoginScreen();
+            }
+        }
 
-        // Carregar pagamentos iniciais
-        fetch('/api/pagamentos')
-            .then(response => response.json())
-            .then(data => {
-                pagamentos = data.pagamentos;
-                atualizarEstatisticas();
-                renderizarPagamentos();
-            })
-            .catch(error => {
-                console.error('Erro ao carregar pagamentos:', error);
-                pagamentosLista.innerHTML = `
-                    <div class="empty-state">
-                        <h3>❌ Erro ao carregar</h3>
-                        <p>Não foi possível carregar os pagamentos. Verifique a conexão com o servidor.</p>
-                    </div>
-                `;
-            });
+        // Mostrar tela de login
+        function showLoginScreen() {
+            loginScreen.classList.remove('hidden');
+            mainApp.classList.add('hidden');
+        }
+
+        // Mostrar aplicação principal
+        function showMainApp() {
+            loginScreen.classList.add('hidden');
+            mainApp.classList.remove('hidden');
+        }
+
+        // Função de login
+        function handleLogin(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Entrando...';
+            
+            // Simular delay de autenticação
+            setTimeout(() => {
+                if (username === LOGIN_USERNAME && password === LOGIN_PASSWORD) {
+                    localStorage.setItem(AUTH_KEY, 'true');
+                    errorMessage.style.display = 'none';
+                    showMainApp();
+                    
+                    // Inicializar aplicação após login
+                    initApp();
+                } else {
+                    errorMessage.style.display = 'block';
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = 'Entrar';
+                }
+            }, 500);
+        }
+
+        // Função de logout
+        function logout() {
+            localStorage.removeItem(AUTH_KEY);
+            showLoginScreen();
+            
+            // Limpar formulário
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            errorMessage.style.display = 'none';
+            loginBtn.disabled = false;
+            loginBtn.textContent = 'Entrar';
+        }
+
+        // Event listener para o formulário de login
+        loginForm.addEventListener('submit', handleLogin);
+
+        // Inicializar aplicação
+        function initApp() {
+            atualizarData();
+            setInterval(atualizarData, 1000);
+
+            // Carregar pagamentos iniciais
+            fetch('/api/pagamentos')
+                .then(response => response.json())
+                .then(data => {
+                    pagamentos = data.pagamentos;
+                    atualizarEstatisticas();
+                    renderizarPagamentos();
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar pagamentos:', error);
+                    pagamentosLista.innerHTML = `
+                        <div class="empty-state">
+                            <h3>❌ Erro ao carregar</h3>
+                            <p>Não foi possível carregar os pagamentos. Verifique a conexão com o servidor.</p>
+                        </div>
+                    `;
+                });
+        }
+
+        // Verificar autenticação ao carregar a página
+        checkAuth();
     </script>
 </body>
 </html> 
