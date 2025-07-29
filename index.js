@@ -178,13 +178,7 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Endpoint para ping (versão simplificada do health check)
-app.get('/ping', (req, res) => {
-  res.status(200).json({ 
-    pong: new Date().toISOString(),
-    uptime: Math.floor(process.uptime())
-  });
-});
+
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {

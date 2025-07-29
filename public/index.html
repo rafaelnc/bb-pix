@@ -151,26 +151,7 @@
             box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
         }
 
-        .ping-status {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px 16px;
-            background: rgba(76, 175, 80, 0.1);
-            border-radius: 8px;
-            color: #4CAF50;
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
 
-        .ping-indicator {
-            animation: rotate 2s linear infinite;
-        }
-
-        @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
 
         .pagamentos-container {
             background: rgba(255, 255, 255, 0.95);
@@ -404,10 +385,7 @@
             <a href="/api/pagamentos" target="_blank" class="btn btn-secondary">
                 📊 API JSON
             </a>
-            <div class="ping-status">
-                <span class="ping-indicator">🔄</span>
-                <span>Ping ativo (5min)</span>
-            </div>
+
         </div>
 
         <div class="pagamentos-container">
@@ -576,31 +554,7 @@
             Notification.requestPermission();
         }
 
-        // Sistema de ping para manter servidor ativo (contorna desativação do Render)
-        function pingServidor() {
-            fetch('/ping')
-                .then(response => response.json())
-                .then(data => {
-                    console.log('Ping enviado:', data.pong, 'Uptime:', data.uptime + 's');
-                    
-                    // Atualizar uptime no frontend
-                    const uptimeElement = document.getElementById('uptime');
-                    if (uptimeElement) {
-                        const horas = Math.floor(data.uptime / 3600);
-                        const minutos = Math.floor((data.uptime % 3600) / 60);
-                        uptimeElement.textContent = `${horas}h ${minutos}m`;
-                    }
-                })
-                .catch(error => {
-                    console.warn('Erro no ping:', error);
-                });
-        }
 
-        // Ping a cada 5 minutos (300000ms) para manter servidor ativo
-        setInterval(pingServidor, 300000);
-        
-        // Primeiro ping imediato
-        pingServidor();
 
         // Inicialização
         atualizarData();
