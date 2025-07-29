@@ -151,19 +151,49 @@ function getDataAtual() {
   return hoje.toISOString().split('T')[0];
 }
 
-// Função para processar e extrair dados do PIX
+// Função para processar e extrair dados do PIX conforme documentação BB
 function processarPagamentoPix(pixData) {
   const pagamento = {
+    // Campos obrigatórios
     txid: pixData.txid,
+    endToEndId: pixData.endToEndId,
     valor: parseFloat(pixData.valor),
     horario: new Date(pixData.horario),
-    infoPagador: pixData.infoPagador,
+    chave: pixData.chave,
+    
+    // Componentes do valor
+    componentesValor: pixData.componentesValor || {},
+    valorOriginal: pixData.componentesValor?.original?.valor || pixData.valor,
+    
+    // Informações do pagador
+    infoPagador: pixData.infoPagador || '',
     pagador: {
-      nome: pixData.pagador.nome,
-      cpf: pixData.pagador.cpf
+      nome: pixData.pagador?.nome || '',
+      cpf: pixData.pagador?.cpf || '',
+      cnpj: pixData.pagador?.cnpj || '',
+      email: pixData.pagador?.email || '',
+      telefone: pixData.pagador?.telefone || ''
     },
-    endToEndId: pixData.endToEndId,
-    chave: pixData.chave
+    
+    // Informações do recebedor (se disponível)
+    recebedor: pixData.recebedor ? {
+      nome: pixData.recebedor.nome || '',
+      cpf: pixData.recebedor.cpf || '',
+      cnpj: pixData.recebedor.cnpj || '',
+      email: pixData.recebedor.email || '',
+      telefone: pixData.recebedor.telefone || ''
+    } : null,
+    
+    // Status da transação
+    status: pixData.status || 'CONCLUIDA',
+    
+    // Informações adicionais
+    tipoChave: pixData.tipoChave || 'EVP',
+    tipoPagamento: pixData.tipoPagamento || 'PIX',
+    
+    // Timestamps de processamento
+    processadoEm: new Date().toISOString(),
+    dataProcessamento: new Date().toISOString().split('T')[0]
   };
   
   return pagamento;

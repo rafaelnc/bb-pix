@@ -1,0 +1,32 @@
+{
+  "pix": [
+    {
+      "endToEndId": "E60746948202103082223A7540Db1234",
+      "txid": "123234443",
+      "valor": "100.00",
+      "componentesValor": {
+        "original": {
+          "valor": "100.00"
+        }
+      },
+      "chave": "baaf230c-a642-546d-1254-aa16ae7c8dc6",
+      "horario": "2022-07-27T14:30:47.00-03:00",
+      "infoPagador": "Pedido XYZ",
+      "pagador": {
+        "cpf": "93492239293",
+        "nome": "VICTOR LOPES DORNELES",
+        "email": "victor@exemplo.com",
+        "telefone": "11999999999"
+      },
+      "recebedor": {
+        "nome": "EMPRESA EXEMPLO LTDA",
+        "cnpj": "12345678000199",
+        "email": "financeiro@empresa.com",
+        "telefone": "1133333333"
+      },
+      "status": "CONCLUIDA",
+      "tipoChave": "EVP",
+      "tipoPagamento": "PIX"
+    }
+  ]
+} 
