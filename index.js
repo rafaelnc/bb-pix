@@ -163,16 +163,16 @@ function processarPagamentoPix(pixData) {
     
     // Componentes do valor
     componentesValor: pixData.componentesValor || {},
-    valorOriginal: pixData.componentesValor?.original?.valor || pixData.valor,
+    valorOriginal: (pixData.componentesValor && pixData.componentesValor.original && pixData.componentesValor.original.valor) || pixData.valor,
     
     // Informações do pagador
     infoPagador: pixData.infoPagador || '',
     pagador: {
-      nome: pixData.pagador?.nome || '',
-      cpf: pixData.pagador?.cpf || '',
-      cnpj: pixData.pagador?.cnpj || '',
-      email: pixData.pagador?.email || '',
-      telefone: pixData.pagador?.telefone || ''
+      nome: (pixData.pagador && pixData.pagador.nome) || '',
+      cpf: (pixData.pagador && pixData.pagador.cpf) || '',
+      cnpj: (pixData.pagador && pixData.pagador.cnpj) || '',
+      email: (pixData.pagador && pixData.pagador.email) || '',
+      telefone: (pixData.pagador && pixData.pagador.telefone) || ''
     },
     
     // Informações do recebedor (se disponível)
